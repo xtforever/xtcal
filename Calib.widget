@@ -1,0 +1,148 @@
+@class Calib( Core )
+
+@EXPORTS
+
+@   x0,y0 : screen coordinate (real)
+    x1,y1 : touch coordinate  (to be transformed)
+
+@type cal_point = struct { int x0,y0,x1,y1; }
+
+@public
+@var Pixel foreground = <String> "White"
+@var Pixel highlight  = <String> "Green"
+@var int lineWidth = 1
+@var int lineSize  = 25
+@var int xpos = 0
+@var int ypos = 0
+@var int crossw = 0
+@var <Callback> XtCallbackList callback   = NULL
+
+@private
+@var GC gc[2]
+@var cal_point coord[4]
+@var int cur_point
+
+@methods
+@proc initialize
+{
+        $width=10; $height=10;
+        alloc_colors($);
+}
+
+@proc resize
+{
+        if( $lineSize < 1 ) $lineSize = 1;
+        float h = $lineSize * 1.0 / 100.0;
+        int xoff = $width * 1.0 * h;
+        int yoff = $height * 1.0 * h;
+        int w;
+        if( xoff / 2 < yoff / 2 ) w = xoff/2; else w=yoff/2;
+
+        xoff = w * 1.5;
+        yoff = w * 1.5;
+
+        if( xoff < 2 ) xoff=2;
+        if( yoff < 2 ) yoff=2;
+        if( w    < 2 ) w = 2;
+
+        $xpos = xoff;
+        $ypos = yoff;
+        $crossw = w;
+        $cur_point = 0;
+}
+
+@proc expose
+{
+        XClearWindow( XtDisplay($), XtWindow($) );
+        redraw($);
+}
+
+@proc set_values
+{
+        alloc_colors($);
+        return True;
+}
+
+@utilities
+@proc alloc_colors($)
+{
+    if( $gc[0] ) XtReleaseGC($, $gc[0] );
+    if( $gc[1] ) XtReleaseGC($, $gc[1] );
+
+    XtGCMask mask;
+    XGCValues values;
+    mask = GCForeground | GCLineWidth | GCLineStyle | GCGraphicsExposures;
+    values.foreground = $foreground;
+    values.line_width = $lineWidth;
+    values.line_style = LineSolid;
+    values.graphics_exposures = False;
+    $gc[0] = XtGetGC($,mask,&values);
+    values.foreground = $highlight;
+    $gc[1] = XtGetGC($,mask,&values);
+}
+
+@proc x_draw_cross( $, int x, int y, int w, int c )
+{
+         XDrawLine( XtDisplay($), XtWindow($), $gc[c],
+                   x - w, y, x +w, y );
+         XDrawLine( XtDisplay($), XtWindow($), $gc[c],
+                   x, y-w, x, y+w );
+}
+
+@proc draw_cross( $, int num, int c )
+{
+        if( num > 3) num = 3;
+        int x,y;
+        x= $xpos; y = $ypos;
+        if( num == 1 || num == 2 ) x = $width - x;
+        if( num == 2 || num == 3 ) y = $height - y;
+        x_draw_cross( $, x,y,$crossw, c != 0 );
+        $coord[num].x0 = x;
+        $coord[num].y0 = y;
+}
+
+@proc redraw($)
+{
+        int i;
+        for( i=0; i<= $cur_point; i++ )
+             draw_cross($,i, i == $cur_point );
+}
+
+
+@TRANSLATIONS
+@trans   <BtnDown>:     notify()
+
+@ACTIONS
+@proc notify
+{
+        Display *disp = XtDisplay($);
+        int num = $cur_point;
+        if( num > 3 ) num = 3;
+        Window child_return;
+        int x,y;
+        int x0 = event->xbutton.x;
+        int y0 = event->xbutton.y;
+
+        XTranslateCoordinates (disp, XtWindow($), DefaultRootWindow(disp),
+                              x0, y0, & x, & y, & child_return);
+        $coord[num].x1 = x;
+        $coord[num].y1 = y;
+
+        x0 = $coord[num].x0;
+        y0 = $coord[num].y0;
+        XTranslateCoordinates (disp, XtWindow($), DefaultRootWindow(disp),
+                              x0, y0, & x, & y, & child_return);
+        $coord[num].x0 = x;
+        $coord[num].y0 = y;
+
+        if( num == 3 ) {
+            num=0;
+            XClearWindow( XtDisplay($), XtWindow($) );
+            XtCallCallbackList( $, $callback, $coord );
+        } else num++;
+        $cur_point = num;
+        $expose($,NULL,0);
+}
+
+@imports
+@incl <stdio.h>

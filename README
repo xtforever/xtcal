@@ -1,0 +1,10 @@
+xtcalib written by jens harms <au1064 at google mail>
+Simply type "make" to build, or "make debug=1" to get additional info.
+To rebuild the Calib widget you'll need wbuild.
+
+Start with "xtcalib" and you get the "coordinate transformation matrix" on stdout.
+use xinput to apply the matrix:
+xinput set-prop 'my touch' 'Coordinate Transformation Matrix' a b c d e f g h i
+
+xtcalib will try to go fullscreen, if this doesn't work you need to run with:
+xtcalib -geometry <Width>x<Height>
