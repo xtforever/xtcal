@@ -94,22 +94,30 @@ void notify({\dollar}, XEvent* event, String* params, Cardinal* num{\underline}p
 
         XTranslateCoordinates (disp, XtWindow({\dollar}), DefaultRootWindow(disp),
                               x0, y0, {\ampersand} x, {\ampersand} y, {\ampersand} child{\underline}return);
+
+        fprintf(stderr,"Event  (x,y)=({\percent}d,{\percent}d){\backslash}n", x0, y0 );
+        fprintf(stderr,"Screen (x,y)=({\percent}d,{\percent}d){\backslash}n", x, y );        
+
         {\dollar}coord[num].x1 = x;
         {\dollar}coord[num].y1 = y;
 
+        /*      
         x0 = {\dollar}coord[num].x0;
         y0 = {\dollar}coord[num].y0;
         XTranslateCoordinates (disp, XtWindow({\dollar}), DefaultRootWindow(disp),
                               x0, y0, {\ampersand} x, {\ampersand} y, {\ampersand} child{\underline}return);
         {\dollar}coord[num].x0 = x;
         {\dollar}coord[num].y0 = y;
+        */
 
+        /* highlight next cross, or return gatherd coordinates via callback function */
         if( num == 3 ) {\lbrace}
             num=0;
             XClearWindow( XtDisplay({\dollar}), XtWindow({\dollar}) );
             XtCallCallbackList( {\dollar}, {\dollar}callback, {\dollar}coord );
         {\rbrace} else num++;
         {\dollar}cur{\underline}point = num;
+
         {\dollar}expose({\dollar},NULL,0);
 {\rbrace}\endCode
 
@@ -148,6 +156,14 @@ initialize(Widget  request, {\dollar}, ArgList  args, Cardinal * num{\underline}
 
 \Section
 \Code
+destroy({\dollar})
+{\lbrace}
+        XUngrabPointer(XtDisplay({\dollar}), CurrentTime );
+{\rbrace}\endCode
+
+
+\Section
+\Code
 resize({\dollar})
 {\lbrace}
         if( {\dollar}lineSize {\langle} 1 ) {\dollar}lineSize = 1;
@@ -175,8 +191,22 @@ resize({\dollar})
 \Code
 expose({\dollar}, XEvent * event, Region  region)
 {\lbrace}
-        XClearWindow( XtDisplay({\dollar}), XtWindow({\dollar}) );
+        Display *d = XtDisplay({\dollar});
+        XClearWindow( d, XtWindow({\dollar}) );
         redraw({\dollar});
+        XGrabPointer( d, XtWindow({\dollar}),
+                      False,
+               ButtonPressMask {\bar}
+               ButtonReleaseMask {\bar}
+               PointerMotionMask {\bar}
+               FocusChangeMask {\bar}
+               EnterWindowMask {\bar}
+               LeaveWindowMask,
+               GrabModeAsync,
+               GrabModeAsync,
+               RootWindow(d, DefaultScreen(d)),
+               None,
+               CurrentTime);
 {\rbrace}\endCode
 
 

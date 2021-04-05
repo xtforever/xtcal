@@ -1,5 +1,7 @@
-wb_install=../wbuild
-WBUILD=../wbuild/wbuild
+wb_install=/etc/X11/app-defaults
+WBUILD=/usr/local/bin/wbuild
+WB=/usr/local/bin/wb.sh
+
 CFLAGS +=-Wall
 CPPFLAGS+=-I. -D_GNU_SOURCE
 WFLAGS= -d doc -c src -i xtcw --include-prefix=xtcw $(wb_install)/tex.w $(wb_install)/nroff.w
@@ -13,12 +15,12 @@ endif
 
 
 %.h %c: %.widget
-	wb_search=../wb $(wb_install)/wb.sh $^ $(WBUILD) $(WFLAGS)
+	wb_search=. $(WB) $^ $(WBUILD) $(WFLAGS)
 
 all: xtcal
 
 xtcw/Calib.h src/Calib.c: Calib.widget
-	wb_search=../wb $(wb_install)/wb.sh $^ $(WBUILD) $(WFLAGS)
+	wb_search=. $(WB) $^ $(WBUILD) $(WFLAGS)
 
 xtcal: src/Calib.o xborderless.o xfullscreen.o
 

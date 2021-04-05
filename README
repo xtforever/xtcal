@@ -8,3 +8,10 @@ xinput set-prop 'my touch' 'Coordinate Transformation Matrix' a b c d e f g h i
 
 xtcalib will try to go fullscreen, if this doesn't work you need to run with:
 xtcalib -geometry <Width>x<Height>
+
+
+xinput list
+xinput list-props 10
+xinput set-props 10 147    1 0 0 0 1 0 0 0 1
+
+xinput float format:   7.12345 

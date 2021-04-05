@@ -1,3 +1,34 @@
+/*
+
+ ./xtcal -OffsetX 0 -OffsetY 0 -WinX 0 -WinY 0 -WinWidth 500 -WinHeight 500 -geometry 500x500+2000+1000
+
+ 
+                           y : 0 .. 768 
+                           x : 1980 .. 3004
+			   
+ --------------------      -------------
+ | (0,0)            |      | 1024x768   |
+ |                  |      |            |
+ |                  |      |            |
+ |    (1980,1080)   |      ------------- 
+ --------------------
+
+                           OffSetX: 1980
+			   OffSetY: 0
+			   WinX: 1980
+			   WinY: 0
+			   WinWidth: 1024
+			   WinHeight: 768
+
+144 144 2148 1214          
+880 144 2906 1119   -->    touch(2906,1119)  == screen( 880+OffSetX, 144+OffSetY)
+880 624 2891 1669   
+144 624 2145 1669
+
+			   
+
+*/
+
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,7 +53,9 @@
 #ifdef DEBUG
 #define pr_mx(a,b,c) dpr_mx(a,b,c)
 #define print_matrix(a,b,c,d) dprint_matrix(a,b,c,d)
+#define trace1(a,b...) fprintf(stderr,a, ## b )
 #else
+#define trace1(a,b...) do {} while(0)
 #define pr_mx(a,b,c) do {} while(0)
 #define print_matrix(a,b,c,d) do {} while(0)
 #endif
@@ -30,6 +63,59 @@
 int x_width, x_height;
 
 Widget TopLevel;
+
+
+char* fallback_resources[] = {
+    "*calib.foreground: White",
+    "*calib.highlight:  Red",
+    "*calib.lineWidth: 10",
+    "*calib.background: Lightblue",
+    NULL
+};
+
+static XrmOptionDescRec options[] = {
+    { "-OffsetX",	"*offsetX",	XrmoptionSepArg, NULL },
+    { "-OffsetY",	"*offsetY",	XrmoptionSepArg, NULL },
+    { "-WinX",          "*winX", 	XrmoptionSepArg, NULL },
+    { "-WinY",          "*winY", 	XrmoptionSepArg, NULL },
+    { "-WinWidth",      "*winWidth", 	XrmoptionSepArg, NULL },
+    { "-WinHeight",     "*winHeight", 	XrmoptionSepArg, NULL }
+};
+
+
+
+struct CALIB_CONF_st {
+    int offsetX, offsetY, winX, winY, winWidth,winHeight;
+};
+
+typedef struct CALIB_CONF_st CALIB_CONF_t;
+
+CALIB_CONF_t CALIB_CONF;
+
+#define FLD(n)  XtOffsetOf(CALIB_CONF_t,n)
+static XtResource CALIB_CONF_RES [] = {
+  { "offsetX", "OffsetX", XtRInt, sizeof(int),
+   FLD(offsetX), XtRImmediate, 0
+  },
+  { "offsetY", "OffsetY", XtRInt, sizeof(int),
+   FLD(offsetY), XtRImmediate, 0
+  },
+  { "winX", "WinX", XtRInt, sizeof(int),
+   FLD(winX), XtRImmediate, 0
+  },
+  { "winY", "WinY", XtRInt, sizeof(int),
+   FLD(winY), XtRImmediate, 0
+  },
+  { "winWidth", "WinWidth", XtRInt, sizeof(int),
+   FLD(winWidth), XtRImmediate, 0
+  },
+  { "winHeight", "WinHeight", XtRInt, sizeof(int),
+   FLD(winHeight), XtRImmediate, 0
+  }
+};
+#undef FLD
+
+
 
 void quit_gui( Widget w, void *u, void *c )
 {
@@ -159,6 +245,20 @@ struct pt {
 };
 
 
+/* calculate the 3x3 Coordinate Transformation Matrix
+   points: array[cnt] of (int screen_x, screen_y, touch_x, touch_y)
+   cnt - number of points (4-tuples)
+   width   - screen width in number of pixels
+   height  - screen height in number of pixels
+
+   
+   CTM       Pointer      Screen    
+   |a b c|   | px |       | sx |  
+   |d e f| * | py |   =   | sy | 
+   |0 0 1|   |  1 |       |  1 |
+
+   
+*/
 void touch_cal(struct pt *points, int cnt, int width, int height)
 {
     struct pt *p;
@@ -244,18 +344,38 @@ void touch_cal(struct pt *points, int cnt, int width, int height)
 
 void process_cal_data( Widget w, void *u, void *p )
 {
-    #ifdef DEBUG
-    puts("cal data");
+#ifdef DEBUG
+    puts("cal data incomming");
     int i;
     cal_point *c = p;
+
+    puts("WinX,WinY   \t TouchX,TouchY");
     for(i=0;i<4;i++) {
-        printf("%d %d %d %d\n", c->x0, c->y0, c->x1, c->y1 );
+        printf("%.6d %.6d \t %.6d %.6d\n", c->x0, c->y0, c->x1, c->y1 );
         c++;
     }
-    printf("Width=%d Height=%d\n", x_width, x_height );
-    #endif
+    
+    trace1("offsetX: %d\n", CALIB_CONF.offsetX );
+    trace1("offsetY: %d\n", CALIB_CONF.offsetY );
+    trace1("width: %d\n", CALIB_CONF.winWidth );
+    trace1("height: %d\n", CALIB_CONF.winHeight );
+    
+#endif
 
-    touch_cal( p,4, x_width, x_height );
+    /* translate window coordinates to target-screen coordinates */
+    c=p;
+    for(int i=0;i < 4; i++ ) {
+	c[i].x0 += CALIB_CONF.offsetX;
+	c[i].y0 += CALIB_CONF.offsetY;	
+    }
+    for(i=0;i<4;i++) {
+        printf("%6d %6d \t %6d %6d\n", c->x0, c->y0, c->x1, c->y1 );
+        c++;
+    }
+
+
+    
+    touch_cal( p,4, CALIB_CONF.winWidth, CALIB_CONF.winHeight ); 
     XtAppSetExitFlag( XtWidgetToApplicationContext(w) );
 }
 
@@ -293,13 +413,9 @@ void grab_window_quit(Widget top)
 }
 
 
-char* fallback_resources[] = {
-    "*calib.foreground: White",
-    "*calib.highlight:  Red",
-    "*calib.lineWidth: 10",
-    "*calib.background: Lightblue",
-    NULL
-};
+
+
+
 
 /******************************************************************************
 *   MAIN function
@@ -315,12 +431,12 @@ int main ( int argc, char **argv )
     /*  -- Intialize Toolkit creating the application shell
      */
     appShell = XtOpenApplication (&app, argv[0],
-                                         NULL,0, // options, XtNumber(options),
-                                         &argc, argv,
-                                         fallback_resources,
-                                         sessionShellWidgetClass,
-                                         NULL, 0
-                                         );
+				  options, XtNumber(options),
+				  &argc, argv,
+				  fallback_resources,
+				  sessionShellWidgetClass,
+				  NULL, 0
+				  );
     TopLevel = appShell;
     w = XtVaCreateManagedWidget( "calib", calibWidgetClass, TopLevel,
                              NULL );
@@ -336,11 +452,21 @@ int main ( int argc, char **argv )
      */
     XtRealizeWidget ( appShell );
     grab_window_quit( appShell );
-
     make_borderless_window(appShell);
 
-    if( xfullscreen(appShell, &x_width, &x_height) )
+    /*  -- Get application resources and widget ptrs
+     */
+    XtGetApplicationResources(	appShell, (XtPointer)&CALIB_CONF,
+				CALIB_CONF_RES,
+				XtNumber(CALIB_CONF_RES),
+				(ArgList)0, 0 );
+
+    
+
+    
+/*    if( xfullscreen(appShell, &x_width, &x_height) ) */
         {
+
             Dimension xw,xh;
             XtVaGetValues(appShell, "height", &xh, "width", &xw, NULL );
             x_width = xw; x_height = xh;

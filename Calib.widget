@@ -29,6 +29,11 @@
         alloc_colors($);
 }
 
+@proc destroy
+{
+	XUngrabPointer(XtDisplay($), CurrentTime );
+}
+
 @proc resize
 {
         if( $lineSize < 1 ) $lineSize = 1;
@@ -53,8 +58,22 @@
 
 @proc expose
 {
-        XClearWindow( XtDisplay($), XtWindow($) );
+	Display *d = XtDisplay($);
+        XClearWindow( d, XtWindow($) );
         redraw($);
+	XGrabPointer( d, XtWindow($),
+		      False,
+               ButtonPressMask |
+               ButtonReleaseMask |
+               PointerMotionMask |
+               FocusChangeMask |
+               EnterWindowMask |
+               LeaveWindowMask,
+               GrabModeAsync,
+               GrabModeAsync,
+               RootWindow(d, DefaultScreen(d)),
+               None,
+               CurrentTime);
 }
 
 @proc set_values
@@ -125,23 +144,31 @@
 
         XTranslateCoordinates (disp, XtWindow($), DefaultRootWindow(disp),
                               x0, y0, & x, & y, & child_return);
+
+        fprintf(stderr,"Event  (x,y)=(%d,%d)\n", x0, y0 );
+	fprintf(stderr,"Screen (x,y)=(%d,%d)\n", x, y );	
+
         $coord[num].x1 = x;
         $coord[num].y1 = y;
 
+	/*	
         x0 = $coord[num].x0;
         y0 = $coord[num].y0;
         XTranslateCoordinates (disp, XtWindow($), DefaultRootWindow(disp),
                               x0, y0, & x, & y, & child_return);
         $coord[num].x0 = x;
         $coord[num].y0 = y;
+        */
 
+	/* highlight next cross, or return gatherd coordinates via callback function */
         if( num == 3 ) {
             num=0;
             XClearWindow( XtDisplay($), XtWindow($) );
             XtCallCallbackList( $, $callback, $coord );
         } else num++;
         $cur_point = num;
-        $expose($,NULL,0);
+
+	$expose($,NULL,0);
 }
 
 @imports

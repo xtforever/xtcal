@@ -3,10 +3,10 @@
  */
 #include <X11/IntrinsicP.h>
 #include <X11/StringDefs.h>
-#line 148 "Calib.widget"
+#line 175 "Calib.widget"
 #include <stdio.h>
 #include <xtcw/CalibP.h>
-#line 116 "Calib.widget"
+#line 135 "Calib.widget"
 static void notify(
 #if NeedFunctionPrototypes
 Widget,XEvent*,String*,Cardinal*
@@ -32,57 +32,63 @@ Widget ,Widget,ArgList ,Cardinal *
 #endif
 );
 #line 32 "Calib.widget"
+static void destroy(
+#if NeedFunctionPrototypes
+Widget
+#endif
+);
+#line 37 "Calib.widget"
 static void resize(
 #if NeedFunctionPrototypes
 Widget
 #endif
 );
-#line 54 "Calib.widget"
+#line 59 "Calib.widget"
 static void expose(
 #if NeedFunctionPrototypes
 Widget,XEvent *,Region 
 #endif
 );
-#line 60 "Calib.widget"
+#line 79 "Calib.widget"
 static Boolean  set_values(
 #if NeedFunctionPrototypes
 Widget ,Widget ,Widget,ArgList ,Cardinal *
 #endif
 );
-#line 67 "Calib.widget"
+#line 86 "Calib.widget"
 static void alloc_colors(
 #if NeedFunctionPrototypes
 Widget
 #endif
 );
-#line 84 "Calib.widget"
+#line 103 "Calib.widget"
 static void x_draw_cross(
 #if NeedFunctionPrototypes
 Widget,int ,int ,int ,int 
 #endif
 );
-#line 92 "Calib.widget"
+#line 111 "Calib.widget"
 static void draw_cross(
 #if NeedFunctionPrototypes
 Widget,int ,int 
 #endif
 );
-#line 104 "Calib.widget"
+#line 123 "Calib.widget"
 static void redraw(
 #if NeedFunctionPrototypes
 Widget
 #endif
 );
-#line 67 "Calib.widget"
+#line 86 "Calib.widget"
 /*ARGSUSED*/
 #if NeedFunctionPrototypes
-#line 67 "Calib.widget"
+#line 86 "Calib.widget"
 static void alloc_colors(Widget self)
 #else
-#line 67 "Calib.widget"
+#line 86 "Calib.widget"
 static void alloc_colors(self)Widget self;
 #endif
-#line 68 "Calib.widget"
+#line 87 "Calib.widget"
 {
     if( ((CalibWidget)self)->calib.gc[0] ) XtReleaseGC(self, ((CalibWidget)self)->calib.gc[0] );
     if( ((CalibWidget)self)->calib.gc[1] ) XtReleaseGC(self, ((CalibWidget)self)->calib.gc[1] );
@@ -98,32 +104,32 @@ static void alloc_colors(self)Widget self;
     values.foreground = ((CalibWidget)self)->calib.highlight;
     ((CalibWidget)self)->calib.gc[1] = XtGetGC(self,mask,&values);
 }
-#line 84 "Calib.widget"
+#line 103 "Calib.widget"
 /*ARGSUSED*/
 #if NeedFunctionPrototypes
-#line 84 "Calib.widget"
+#line 103 "Calib.widget"
 static void x_draw_cross(Widget self,int  x,int  y,int  w,int  c)
 #else
-#line 84 "Calib.widget"
+#line 103 "Calib.widget"
 static void x_draw_cross(self,x,y,w,c)Widget self;int  x;int  y;int  w;int  c;
 #endif
-#line 85 "Calib.widget"
+#line 104 "Calib.widget"
 {
          XDrawLine( XtDisplay(self), XtWindow(self), ((CalibWidget)self)->calib.gc[c],
                    x - w, y, x +w, y );
          XDrawLine( XtDisplay(self), XtWindow(self), ((CalibWidget)self)->calib.gc[c],
                    x, y-w, x, y+w );
 }
-#line 92 "Calib.widget"
+#line 111 "Calib.widget"
 /*ARGSUSED*/
 #if NeedFunctionPrototypes
-#line 92 "Calib.widget"
+#line 111 "Calib.widget"
 static void draw_cross(Widget self,int  num,int  c)
 #else
-#line 92 "Calib.widget"
+#line 111 "Calib.widget"
 static void draw_cross(self,num,c)Widget self;int  num;int  c;
 #endif
-#line 93 "Calib.widget"
+#line 112 "Calib.widget"
 {
         if( num > 3) num = 3;
         int x,y;
@@ -134,16 +140,16 @@ static void draw_cross(self,num,c)Widget self;int  num;int  c;
         ((CalibWidget)self)->calib.coord[num].x0 = x;
         ((CalibWidget)self)->calib.coord[num].y0 = y;
 }
-#line 104 "Calib.widget"
+#line 123 "Calib.widget"
 /*ARGSUSED*/
 #if NeedFunctionPrototypes
-#line 104 "Calib.widget"
+#line 123 "Calib.widget"
 static void redraw(Widget self)
 #else
-#line 104 "Calib.widget"
+#line 123 "Calib.widget"
 static void redraw(self)Widget self;
 #endif
-#line 105 "Calib.widget"
+#line 124 "Calib.widget"
 {
         int i;
         for( i=0; i<= ((CalibWidget)self)->calib.cur_point; i++ )
@@ -189,7 +195,7 @@ CalibClassRec calibClassRec = {
 /* compress_exposure 	*/  FALSE ,
 /* compress_enterleave 	*/  False ,
 /* visible_interest 	*/  False ,
-/* destroy      	*/  NULL,
+/* destroy      	*/  destroy,
 /* resize       	*/  resize,
 /* expose       	*/  expose,
 /* set_values   	*/  set_values,
@@ -210,7 +216,7 @@ CalibClassRec calibClassRec = {
 };
 WidgetClass calibWidgetClass = (WidgetClass) &calibClassRec;
 /*ARGSUSED*/
-#line 116 "Calib.widget"
+#line 135 "Calib.widget"
 static void notify(self,event,params,num_params)Widget self;XEvent*event;String*params;Cardinal*num_params;
 {
         Display *disp = XtDisplay(self);
@@ -223,23 +229,31 @@ static void notify(self,event,params,num_params)Widget self;XEvent*event;String*
 
         XTranslateCoordinates (disp, XtWindow(self), DefaultRootWindow(disp),
                               x0, y0, & x, & y, & child_return);
+
+        fprintf(stderr,"Event  (x,y)=(%d,%d)\n", x0, y0 );
+	fprintf(stderr,"Screen (x,y)=(%d,%d)\n", x, y );	
+
         ((CalibWidget)self)->calib.coord[num].x1 = x;
         ((CalibWidget)self)->calib.coord[num].y1 = y;
 
-        x0 = ((CalibWidget)self)->calib.coord[num].x0;
-        y0 = ((CalibWidget)self)->calib.coord[num].y0;
-        XTranslateCoordinates (disp, XtWindow(self), DefaultRootWindow(disp),
+	/*	
+        x0 = $coord[num].x0;
+        y0 = $coord[num].y0;
+        XTranslateCoordinates (disp, XtWindow($), DefaultRootWindow(disp),
                               x0, y0, & x, & y, & child_return);
-        ((CalibWidget)self)->calib.coord[num].x0 = x;
-        ((CalibWidget)self)->calib.coord[num].y0 = y;
+        $coord[num].x0 = x;
+        $coord[num].y0 = y;
+        */
 
+	/* highlight next cross, or return gatherd coordinates via callback function */
         if( num == 3 ) {
             num=0;
             XClearWindow( XtDisplay(self), XtWindow(self) );
             XtCallCallbackList( self, ((CalibWidget)self)->calib.callback, ((CalibWidget)self)->calib.coord );
         } else num++;
         ((CalibWidget)self)->calib.cur_point = num;
-        ((CalibWidgetClass)self->core.widget_class)->core_class.expose(self,NULL,0);
+
+	((CalibWidgetClass)self->core.widget_class)->core_class.expose(self,NULL,0);
 }
 
 static void _resolve_inheritance(class)
@@ -268,12 +282,25 @@ static void initialize(request,self,args,num_args)Widget  request;Widget self;Ar
 /*ARGSUSED*/
 #if NeedFunctionPrototypes
 #line 32 "Calib.widget"
-static void resize(Widget self)
+static void destroy(Widget self)
 #else
 #line 32 "Calib.widget"
-static void resize(self)Widget self;
+static void destroy(self)Widget self;
 #endif
 #line 33 "Calib.widget"
+{
+	XUngrabPointer(XtDisplay(self), CurrentTime );
+}
+#line 37 "Calib.widget"
+/*ARGSUSED*/
+#if NeedFunctionPrototypes
+#line 37 "Calib.widget"
+static void resize(Widget self)
+#else
+#line 37 "Calib.widget"
+static void resize(self)Widget self;
+#endif
+#line 38 "Calib.widget"
 {
         if( ((CalibWidget)self)->calib.lineSize < 1 ) ((CalibWidget)self)->calib.lineSize = 1;
         float h = ((CalibWidget)self)->calib.lineSize * 1.0 / 100.0;
@@ -294,30 +321,44 @@ static void resize(self)Widget self;
         ((CalibWidget)self)->calib.crossw = w;
         ((CalibWidget)self)->calib.cur_point = 0;
 }
-#line 54 "Calib.widget"
+#line 59 "Calib.widget"
 /*ARGSUSED*/
 #if NeedFunctionPrototypes
-#line 54 "Calib.widget"
+#line 59 "Calib.widget"
 static void expose(Widget self,XEvent * event,Region  region)
 #else
-#line 54 "Calib.widget"
+#line 59 "Calib.widget"
 static void expose(self,event,region)Widget self;XEvent * event;Region  region;
 #endif
-#line 55 "Calib.widget"
-{
-        XClearWindow( XtDisplay(self), XtWindow(self) );
-        redraw(self);
-}
 #line 60 "Calib.widget"
+{
+	Display *d = XtDisplay(self);
+        XClearWindow( d, XtWindow(self) );
+        redraw(self);
+	XGrabPointer( d, XtWindow(self),
+		      False,
+               ButtonPressMask |
+               ButtonReleaseMask |
+               PointerMotionMask |
+               FocusChangeMask |
+               EnterWindowMask |
+               LeaveWindowMask,
+               GrabModeAsync,
+               GrabModeAsync,
+               RootWindow(d, DefaultScreen(d)),
+               None,
+               CurrentTime);
+}
+#line 79 "Calib.widget"
 /*ARGSUSED*/
 #if NeedFunctionPrototypes
-#line 60 "Calib.widget"
+#line 79 "Calib.widget"
 static Boolean  set_values(Widget  old,Widget  request,Widget self,ArgList  args,Cardinal * num_args)
 #else
-#line 60 "Calib.widget"
+#line 79 "Calib.widget"
 static Boolean  set_values(old,request,self,args,num_args)Widget  old;Widget  request;Widget self;ArgList  args;Cardinal * num_args;
 #endif
-#line 61 "Calib.widget"
+#line 80 "Calib.widget"
 {
         alloc_colors(self);
         return True;
