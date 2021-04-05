@@ -344,6 +344,7 @@ void touch_cal(struct pt *points, int cnt, int width, int height)
 
 void process_cal_data( Widget w, void *u, void *p )
 {
+    
 #ifdef DEBUG
     puts("cal data incomming");
     int i;
@@ -351,7 +352,7 @@ void process_cal_data( Widget w, void *u, void *p )
 
     puts("WinX,WinY   \t TouchX,TouchY");
     for(i=0;i<4;i++) {
-        printf("%.6d %.6d \t %.6d %.6d\n", c->x0, c->y0, c->x1, c->y1 );
+        printf("%6d %6d \t %6d %6d\n", c->x0, c->y0, c->x1, c->y1 );
         c++;
     }
     
