@@ -247,17 +247,31 @@ struct pt {
 
 /* calculate the 3x3 Coordinate Transformation Matrix
    points: array[cnt] of (int screen_x, screen_y, touch_x, touch_y)
-   cnt - number of points (4-tuples)
-   width   - screen width in number of pixels
-   height  - screen height in number of pixels
+   cnt - number of points (4-tuple)
+   width   - desktop/screen width in number of pixels
+   height  - desktop/screen height in number of pixels
 
    
    CTM       Pointer      Screen    
    |a b c|   | px |       | sx |  
    |d e f| * | py |   =   | sy | 
    |0 0 1|   |  1 |       |  1 |
+   
 
    
+     a * px0 + b * py0 + c = sx0
+     a * px1 + b * py1 + c = sx1
+     a * px2 + b * py2 + c = sx2
+     a * px3 + b * py3 + c = sx3
+
+     px0 py0 1   a    sx0
+     px1 py1 1   b    sx1
+     px2 py2 1   c    sx2
+     px3 py3 1        sx3
+
+    // d * px + e * py + f = sy
+    
+
 */
 void touch_cal(struct pt *points, int cnt, int width, int height)
 {
@@ -276,10 +290,7 @@ void touch_cal(struct pt *points, int cnt, int width, int height)
 
     print_matrix( "XY", xy, cnt, 4 );
 
-    double ata[9], atx[3], aty[3];
-    memset( ata, 0, sizeof ata );
-    memset( atx, 0, sizeof atx );
-    memset( aty, 0, sizeof aty );
+    double ata[9] = { 0 }, atx[3] = { 0 }, aty[3] = { 0 };
 
     for( i=0; i<cnt; i++ ) {
         double *xy1 = xy + 4 * i;
@@ -342,44 +353,41 @@ void touch_cal(struct pt *points, int cnt, int width, int height)
     printf( "0 0 1\n");
 }
 
-void process_cal_data( Widget w, void *u, void *p )
+// c : array of 4 points (x,y,x1,y1)
+void dump_cal_data( cal_point *c )
 {
-    
-#ifdef DEBUG
-    puts("cal data incomming");
-    int i;
-    cal_point *c = p;
-
-    puts("WinX,WinY   \t TouchX,TouchY");
-    for(i=0;i<4;i++) {
+#ifdef DEBUG    
+    puts("calibration data\n  WinX   WinY\t TouchX TouchY");
+    for(int i=0;i<4;i++) {
         printf("%6d %6d \t %6d %6d\n", c->x0, c->y0, c->x1, c->y1 );
         c++;
     }
-    
+#endif
+}
+
+void process_cal_data( Widget w, void *u, void *p )
+{
+    cal_point *c = p;    
+
     trace1("offsetX: %d\n", CALIB_CONF.offsetX );
     trace1("offsetY: %d\n", CALIB_CONF.offsetY );
     trace1("width: %d\n", CALIB_CONF.winWidth );
     trace1("height: %d\n", CALIB_CONF.winHeight );
+    dump_cal_data(c);
     
-#endif
-
     /* translate window coordinates to target-screen coordinates */
-    c=p;
     for(int i=0;i < 4; i++ ) {
 	c[i].x0 += CALIB_CONF.offsetX;
 	c[i].y0 += CALIB_CONF.offsetY;	
     }
-    for(i=0;i<4;i++) {
-        printf("%6d %6d \t %6d %6d\n", c->x0, c->y0, c->x1, c->y1 );
-        c++;
-    }
 
+    trace1("translated screen/touch coordinates");
+    dump_cal_data(c);
 
-    
+    /* calculate the CTM and exit */ 
     touch_cal( p,4, CALIB_CONF.winWidth, CALIB_CONF.winHeight ); 
     XtAppSetExitFlag( XtWidgetToApplicationContext(w) );
 }
-
 
 
 
